@@ -33,7 +33,7 @@ $(NAME): $(OBJS)
 
 $(OBJS): $(SRCS)
 	make -C libft/
-	gcc -I libft/includes/ $(FLAGS) -c $^ -g
+	gcc -I libft/includes/ $(FLAGS) -c $^
 	@mkdir $(OBJ_PATH) 2> /dev/null || true
 	@mv $(OBJ) $(OBJ_PATH)
 
