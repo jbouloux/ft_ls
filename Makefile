@@ -28,7 +28,7 @@ make:
 	make -C libft/
 
 $(NAME): $(OBJS)
-	gcc -o $(NAME) $(OBJS) -L libft/ -lft -g
+	gcc -o $(NAME) $(OBJS) -L libft/ -lft
 	@echo "Compilation of $(NAME) : DONE ! \n"
 
 $(OBJS): $(SRCS)
