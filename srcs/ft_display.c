@@ -1,44 +1,49 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ft_display.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jbouloux <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2016/04/13 18:49:19 by jbouloux          #+#    #+#             */
+/*   Updated: 2016/04/13 18:49:21 by jbouloux         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../includes/ft_ls.h"
 #include "../libft/includes/libft.h"
 
-void	display_simple(s_env *env)
+void			loop_display(t_dir *begin, t_env *env, int line)
 {
-	t_list_dir	*tmpdir;
-	t_files		*tmpfl;
+	t_dir *tmp;
 
-	tmpdir = env->dir;
-	while (tmpdir)
+	tmp = begin;
+	while (tmp)
 	{
-		if (env->multi || (tmpdir->next))
+		if (!(env->flags[0]))
 		{
-			ft_putstr(tmpdir->path);
-			ft_putstr(":\n");
+			display_simple(tmp, env, line);
+			line = 1;
 		}
-		tmpfl = tmpdir->files;
-		get_file_name(tmpfl);
-		pick_sort(tmpfl, env->flags);
-		while (tmpfl)
+		else
 		{
-			ft_putstr(tmpfl->name);
-			ft_putchar('\n');
-			tmpfl = tmpfl->next;
+			display_fat(tmp, env, line);
+			line = 1;
 		}
-		if ((tmpdir = tmpdir->next))
-			ft_putchar('\n');
+		if (tmp->sousdir)
+			loop_display(tmp->sousdir, env, line);
+		tmp = tmp->next;
 	}
 }
 
-static void	dsp_fat_file2(struct stat *file, char *name, char *path, int *padtab)
+static void		dsp_fat_file2(t_stat *file, char *name, char *path, int *padtab)
 {
 	if (S_ISCHR(file->st_mode) || S_ISBLK(file->st_mode))
 		display_major_minor(file->st_rdev, padtab);
 	else
 	{
 		if (padtab[6])
-		{
 			display_padding(file->st_size, padtab[6]);
-			ft_putchar(' ');
-		}
 		else
 			display_padding(file->st_size, padtab[1]);
 	}
@@ -50,36 +55,44 @@ static void	dsp_fat_file2(struct stat *file, char *name, char *path, int *padtab
 	ft_putchar('\n');
 }
 
-void	display_fat_file(struct stat *file, char *name, char *path, int *padtab)
+void			display_fat_file(t_stat *file, char *name, char *path, int *pad)
 {
 	char *testacl;
 
 	testacl = ft_strnew(256);
 	if (!file || !name)
-		return;
+		return ;
 	ft_print_rights(file->st_mode);
-	if (listxattr(path, testacl, 256, 0))
+	if (listxattr(path, testacl, 256, 0) && ((file->st_mode & S_IFMT) \
+		!= S_IFLNK) && ((file->st_mode & S_IFMT) != S_IFBLK) && \
+		((file->st_mode & S_IFMT) != S_IFCHR))
 		ft_putstr("@ ");
+	else if ((acl_get_file(path, ACL_TYPE_EXTENDED)) != 0)
+		ft_putstr("+ ");
 	else
 		ft_putstr("  ");
 	free(testacl);
-	display_padding(file->st_nlink, padtab[0]);
+	display_padding(file->st_nlink, pad[0]);
 	ft_putchar(' ');
-	display_paddingstr((getpwuid(file->st_uid))->pw_name, padtab[2]);
+	display_paddingstr((getpwuid(file->st_uid))->pw_name, pad[2]);
 	ft_putstr("  ");
-	display_paddingstr((getgrgid(file->st_gid))->gr_name, padtab[3]);
+	display_paddingstr((getgrgid(file->st_gid))->gr_name, pad[3]);
 	ft_putstr("  ");
-	dsp_fat_file2(file, name, path, padtab);
+	dsp_fat_file2(file, name, path, pad);
 }
 
-static t_list_dir *dsp_fat2(t_list_dir	*tmpdir, s_env *env)
+static t_dir	*dsp_fat2(t_dir *tmpdir, t_env *env)
 {
 	t_files		*tmpfl;
 	int			*padtab;
 
-	ft_putstr("total ");
-	ft_putlong(get_dirblock(tmpdir->files));
-	ft_putchar('\n');
+	env->line = 1;
+	if (tmpdir->files)
+	{
+		ft_putstr("total ");
+		ft_putlong(get_dirblock(tmpdir->files));
+		ft_putchar('\n');
+	}
 	tmpfl = tmpdir->files;
 	padtab = get_padtab(tmpfl);
 	get_file_name(tmpfl);
@@ -89,31 +102,27 @@ static t_list_dir *dsp_fat2(t_list_dir	*tmpdir, s_env *env)
 		display_fat_file(tmpfl->info, tmpfl->name, tmpfl->path, padtab);
 		tmpfl = tmpfl->next;
 	}
-	tmpdir = tmpdir->next;
-	if (tmpdir)
-		ft_putchar('\n');
 	free(padtab);
 	return (tmpdir);
 }
 
-void	display_fat(s_env *env)
+void			display_fat(t_dir *begin, t_env *env, int line)
 {
-	t_list_dir	*tmpdir;
+	t_dir	*tmpdir;
 
-	tmpdir = env->dir;
-	while (tmpdir)
+	tmpdir = begin;
+	if (line)
+		ft_putchar('\n');
+	if (env->multi)
 	{
-		if (env->multi || (tmpdir->next))
-		{
-			ft_putstr(tmpdir->path);
-			ft_putstr(":\n");
-		}
-		if (tmpdir->error)
-		{
-			ft_putstr(tmpdir->error);
-			tmpdir = tmpdir->next;
-		}
-		else
-			tmpdir = dsp_fat2(tmpdir, env);
+		ft_putstr(tmpdir->path);
+		ft_putstr(":\n");
 	}
+	if (tmpdir->error)
+	{
+		ft_putstr(tmpdir->error);
+		tmpdir = tmpdir->next;
+	}
+	else
+		tmpdir = dsp_fat2(tmpdir, env);
 }

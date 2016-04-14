@@ -5,16 +5,20 @@ FLAGS = -Wall -Wextra -Werror
 LDFLAGS = -I ./includes/
 
 SRC = main.c \
-	  ft_ls_tools.c \
-	  ft_ls_tools2.c \
-	  ft_ls_tools3.c \
-	  ft_getdir_r.c \
-	  ft_get_files.c \
+	  ft_check.c \
+	  ft_create.c \
 	  ft_display.c \
-	  ft_display2.c \
-	  ft_display3.c \
-	  ft_detail.c \
-	  ft_sort.c
+	  ft_free.c \
+	  ft_get.c \
+	  ft_get2.c \
+	  ft_get_files.c \
+	  ft_get_dir.c \
+	  ft_padding.c \
+	  ft_print_details.c \
+	  ft_print_solo.c \
+	  ft_sort.c \
+	  ft_sort_dir.c \
+	  ft_swap.c
 
 OBJ = $(SRC:.c=.o)
 	SRC_PATH	= ./srcs/
@@ -28,12 +32,12 @@ make:
 	make -C libft/
 
 $(NAME): $(OBJS)
-	gcc -o $(NAME) $(OBJS) -L libft/ -lft
+	gcc -o $(NAME) $(OBJS) -L libft/ -lft -g
 	@echo "Compilation of $(NAME) : DONE ! \n"
 
 $(OBJS): $(SRCS)
 	make -C libft/
-	gcc -I libft/includes/ $(FLAGS) -c $^
+	gcc -I libft/includes/ $(FLAGS) -c $^ -g
 	@mkdir $(OBJ_PATH) 2> /dev/null || true
 	@mv $(OBJ) $(OBJ_PATH)
 
